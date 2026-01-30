@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { RestaurantProvider } from "@/context/RestaurantContext";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -42,9 +43,11 @@ export default function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.variable} font-sans antialiased`}>
-        <div className="min-h-dvh bg-[#221610] text-white">
-          {children}
-        </div>
+        <RestaurantProvider>
+          <div className="min-h-dvh bg-[#221610] text-white">
+            {children}
+          </div>
+        </RestaurantProvider>
       </body>
     </html>
   );

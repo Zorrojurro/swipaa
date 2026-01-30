@@ -6,10 +6,12 @@ import RestaurantCard from "@/components/RestaurantCard";
 import ActionButtons from "@/components/ActionButtons";
 import BottomNav from "@/components/BottomNav";
 import FilterChips from "@/components/FilterChips";
-import { restaurants, Restaurant, spiceDisplay } from "@/data/restaurants";
+import { useRestaurants } from "@/context/RestaurantContext";
+import { Restaurant, spiceDisplay } from "@/data/restaurants";
 
 export default function DiscoverPage() {
     const router = useRouter();
+    const { restaurants, loading, location, useMockData, setUseMockData } = useRestaurants();
     const [currentIndex, setCurrentIndex] = useState(0);
     const [likedRestaurants, setLikedRestaurants] = useState<Restaurant[]>([]);
     const [passedRestaurants, setPassedRestaurants] = useState<Restaurant[]>([]);
@@ -198,7 +200,9 @@ export default function DiscoverPage() {
                             expand_more
                         </span>
                     </h1>
-                    <p className="text-xs text-white/50 font-medium tracking-wide uppercase">Bengaluru</p>
+                    <p className="text-xs text-white/50 font-medium tracking-wide uppercase">
+                        {location.loading ? "Locating..." : location.city}
+                    </p>
                 </div>
                 <button
                     onClick={() => setShowFilters(!showFilters)}
