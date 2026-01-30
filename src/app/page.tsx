@@ -4,83 +4,79 @@ import Link from "next/link";
 
 export default function OnboardingPage() {
   return (
-    <div className="fixed inset-0 bg-[#0f0a07] flex flex-col overflow-hidden">
-      {/* Ambient glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-[#f46a25]/20 rounded-full blur-[150px] pointer-events-none" />
+    <div
+      className="flex flex-col bg-[#0d0907]"
+      style={{ minHeight: "100dvh" }}
+    >
+      {/* Glow effect */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[50vh] bg-gradient-to-b from-[#f46a25]/10 to-transparent" />
 
-      {/* Logo */}
-      <header className="relative z-10 flex items-center justify-center pt-14 pb-6">
-        <div className="flex items-center gap-2.5">
-          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#f46a25] to-[#d4520f] flex items-center justify-center shadow-lg shadow-[#f46a25]/40">
-            <span className="text-white text-2xl font-black">S</span>
+      {/* Header */}
+      <header className="relative flex items-center justify-center pt-safe pt-12 pb-4">
+        <div className="flex items-center gap-2">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#f46a25] to-[#d35a15] flex items-center justify-center">
+            <span className="text-white text-xl font-black">S</span>
           </div>
-          <span className="text-white text-2xl font-bold tracking-tight">Swipaa</span>
+          <span className="text-white text-xl font-bold">Swipaa</span>
         </div>
       </header>
 
-      {/* Hero Image Area */}
-      <main className="relative z-10 flex-1 flex items-center justify-center px-8">
-        <div className="relative w-full max-w-[280px]">
-          {/* Floating cards behind */}
-          <div className="absolute -left-4 -top-3 w-full h-full">
-            <div className="w-full h-full rounded-[28px] bg-gradient-to-br from-[#3d2a1f] to-[#2a1c14] border border-white/10 -rotate-6 shadow-xl" />
-          </div>
-          <div className="absolute -right-4 -top-2 w-full h-full">
-            <div className="w-full h-full rounded-[28px] bg-gradient-to-br from-[#3d2a1f] to-[#2a1c14] border border-white/10 rotate-6 shadow-xl" />
-          </div>
+      {/* Card Preview - takes remaining space */}
+      <main className="relative flex-1 flex flex-col items-center justify-center px-8 py-4">
+        <div className="relative w-full max-w-[260px]">
+          {/* Background cards */}
+          <div className="absolute inset-0 rounded-3xl bg-[#1a1411] border border-white/5 -rotate-6 scale-95" />
+          <div className="absolute inset-0 rounded-3xl bg-[#1a1411] border border-white/5 rotate-3 scale-[0.97]" />
 
           {/* Main card */}
-          <div className="relative rounded-[28px] overflow-hidden shadow-2xl border border-white/10 aspect-[3/4] bg-[#1a1210]">
+          <div className="relative rounded-3xl overflow-hidden border border-white/10 aspect-[3/4] shadow-2xl">
             <img
-              src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600"
+              src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500"
               alt="Restaurant"
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-
-            {/* Card content */}
-            <div className="absolute bottom-0 left-0 right-0 p-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#f46a25] to-[#e55815] mb-3 shadow-lg">
-                <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
-                <span className="text-white text-xs font-bold">Perfect Match</span>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#f46a25] mb-2">
+                <span className="material-symbols-outlined text-white text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                <span className="text-white text-[11px] font-bold">Perfect Match</span>
               </div>
-              <h3 className="text-white text-xl font-bold mb-1">The Permit Room</h3>
-              <p className="text-white/60 text-sm">Coastal • $$$ • 2.2 km</p>
+              <h3 className="text-white text-lg font-bold">The Permit Room</h3>
+              <p className="text-white/60 text-sm">Coastal • 2.2 km</p>
             </div>
           </div>
+        </div>
 
-          {/* Action buttons overlay */}
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-[#1a1210] border border-white/10 flex items-center justify-center shadow-xl">
-              <span className="material-symbols-outlined text-red-400 text-2xl">close</span>
-            </div>
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#f46a25] to-[#d4520f] flex items-center justify-center shadow-xl shadow-[#f46a25]/40">
-              <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
-            </div>
-            <div className="w-14 h-14 rounded-full bg-[#1a1210] border border-white/10 flex items-center justify-center shadow-xl">
-              <span className="material-symbols-outlined text-blue-400 text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-            </div>
+        {/* Action buttons */}
+        <div className="flex items-center justify-center gap-5 mt-6">
+          <div className="h-12 w-12 rounded-full bg-[#171211] border border-white/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-red-400 text-xl">close</span>
+          </div>
+          <div className="h-14 w-14 rounded-full bg-gradient-to-br from-[#f46a25] to-[#d35a15] flex items-center justify-center shadow-lg shadow-[#f46a25]/25">
+            <span className="material-symbols-outlined text-white text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+          </div>
+          <div className="h-12 w-12 rounded-full bg-[#171211] border border-white/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-blue-400 text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
           </div>
         </div>
       </main>
 
-      {/* Bottom CTA */}
-      <div className="relative z-10 px-8 pb-12 pt-16">
-        <h1 className="text-white text-[28px] font-extrabold text-center leading-tight mb-3">
-          Dining decided,<br />
-          <span className="bg-gradient-to-r from-[#f46a25] to-[#ff8c4a] bg-clip-text text-transparent">together.</span>
+      {/* Bottom section */}
+      <footer className="relative px-6 pb-safe pb-8 pt-4">
+        <h1 className="text-center text-[26px] font-extrabold text-white leading-tight mb-2">
+          Dining decided,{" "}
+          <span className="text-[#f46a25]">together.</span>
         </h1>
-        <p className="text-white/40 text-center text-[15px] mb-8 max-w-[260px] mx-auto leading-relaxed">
+        <p className="text-center text-white/40 text-sm mb-6 max-w-[280px] mx-auto">
           Swipe on restaurants with friends and find the perfect spot.
         </p>
-
         <Link
           href="/discover"
-          className="block w-full bg-gradient-to-r from-[#f46a25] to-[#e55815] text-white text-lg font-bold py-4 rounded-2xl text-center shadow-xl shadow-[#f46a25]/30 active:scale-[0.98] transition-transform"
+          className="block w-full max-w-sm mx-auto bg-gradient-to-r from-[#f46a25] to-[#d35a15] text-white text-base font-bold py-4 rounded-2xl text-center shadow-lg shadow-[#f46a25]/20"
         >
           Get Started
         </Link>
-      </div>
+      </footer>
     </div>
   );
 }

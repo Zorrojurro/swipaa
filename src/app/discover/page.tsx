@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useRestaurants } from "@/context/RestaurantContext";
 import { Restaurant, spiceDisplay, priceDisplay } from "@/data/restaurants";
 
@@ -12,246 +13,192 @@ export default function DiscoverPage() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [likedCount, setLikedCount] = useState(0);
     const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
-    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [dragX, setDragX] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
-    const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+    const [startX, setStartX] = useState(0);
 
-    const currentRestaurant = restaurants[currentIndex];
-    const nextRestaurant = restaurants[currentIndex + 1];
-    const spice = currentRestaurant ? spiceDisplay(currentRestaurant.spiceLevel) : null;
+    const current = restaurants[currentIndex];
+    const next = restaurants[currentIndex + 1];
 
     const handleLike = useCallback(() => {
-        if (!currentRestaurant) return;
+        if (!current) return;
         setSwipeDirection("right");
         const newCount = likedCount + 1;
         setLikedCount(newCount);
 
         setTimeout(() => {
-            setCurrentIndex(prev => prev + 1);
+            setCurrentIndex(i => i + 1);
             setSwipeDirection(null);
-            setDragOffset({ x: 0, y: 0 });
-
-            if (newCount >= 3) {
-                router.push(`/match?id=${currentRestaurant.id}`);
-            }
-        }, 250);
-    }, [currentRestaurant, likedCount, router]);
+            setDragX(0);
+            if (newCount >= 3) router.push(`/match?id=${current.id}`);
+        }, 200);
+    }, [current, likedCount, router]);
 
     const handlePass = useCallback(() => {
-        if (!currentRestaurant) return;
+        if (!current) return;
         setSwipeDirection("left");
-
         setTimeout(() => {
-            setCurrentIndex(prev => prev + 1);
+            setCurrentIndex(i => i + 1);
             setSwipeDirection(null);
-            setDragOffset({ x: 0, y: 0 });
-        }, 250);
-    }, [currentRestaurant]);
+            setDragX(0);
+        }, 200);
+    }, [current]);
 
-    // Touch handlers
     const onTouchStart = (e: React.TouchEvent) => {
         setIsDragging(true);
-        setStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+        setStartX(e.touches[0].clientX);
     };
 
     const onTouchMove = (e: React.TouchEvent) => {
         if (!isDragging) return;
-        const deltaX = e.touches[0].clientX - startPos.x;
-        setDragOffset({ x: deltaX, y: 0 });
+        setDragX(e.touches[0].clientX - startX);
     };
 
     const onTouchEnd = () => {
-        if (!isDragging) return;
         setIsDragging(false);
-
-        if (dragOffset.x > 100) handleLike();
-        else if (dragOffset.x < -100) handlePass();
-        else setDragOffset({ x: 0, y: 0 });
+        if (dragX > 80) handleLike();
+        else if (dragX < -80) handlePass();
+        else setDragX(0);
     };
 
-    // Keyboard
     useEffect(() => {
-        const handleKey = (e: KeyboardEvent) => {
+        const onKey = (e: KeyboardEvent) => {
             if (e.key === "ArrowRight") handleLike();
             if (e.key === "ArrowLeft") handlePass();
         };
-        window.addEventListener("keydown", handleKey);
-        return () => window.removeEventListener("keydown", handleKey);
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
     }, [handleLike, handlePass]);
 
-    // Card style
-    const cardStyle = swipeDirection === "left"
-        ? { transform: "translateX(-120%) rotate(-15deg)", opacity: 0, transition: "all 0.25s ease-out" }
+    const cardTransform = swipeDirection === "left"
+        ? "translateX(-110%) rotate(-12deg)"
         : swipeDirection === "right"
-            ? { transform: "translateX(120%) rotate(15deg)", opacity: 0, transition: "all 0.25s ease-out" }
-            : {
-                transform: `translateX(${dragOffset.x}px) rotate(${dragOffset.x * 0.04}deg)`,
-                transition: isDragging ? "none" : "all 0.15s ease-out",
-            };
+            ? "translateX(110%) rotate(12deg)"
+            : `translateX(${dragX}px) rotate(${dragX * 0.03}deg)`;
 
     // Empty state
-    if (!currentRestaurant) {
+    if (!current) {
         return (
-            <div className="fixed inset-0 bg-[#0f0a07] flex flex-col items-center justify-center px-8 text-center">
-                <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
-                    <span className="material-symbols-outlined text-4xl text-white/20">restaurant</span>
-                </div>
+            <div className="flex flex-col items-center justify-center bg-[#0d0907] px-6 text-center" style={{ minHeight: "100dvh" }}>
+                <span className="material-symbols-outlined text-6xl text-white/10 mb-4">restaurant</span>
                 <h2 className="text-xl font-bold text-white mb-2">All done!</h2>
-                <p className="text-white/40 mb-8">You&apos;ve seen all restaurants</p>
-                <button onClick={() => setCurrentIndex(0)} className="px-8 py-3 bg-[#f46a25] text-white font-semibold rounded-xl">
+                <p className="text-white/40 mb-6">You&apos;ve seen all restaurants</p>
+                <button onClick={() => setCurrentIndex(0)} className="px-6 py-3 bg-[#f46a25] text-white font-semibold rounded-xl">
                     Start Over
                 </button>
             </div>
         );
     }
 
-    return (
-        <div className="fixed inset-0 bg-[#0f0a07] flex flex-col overflow-hidden">
-            {/* Ambient glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[#f46a25]/10 rounded-full blur-[120px] pointer-events-none" />
+    const spice = spiceDisplay(current.spiceLevel);
 
+    return (
+        <div className="flex flex-col bg-[#0d0907]" style={{ minHeight: "100dvh" }}>
             {/* Header */}
-            <header className="relative z-20 flex items-center justify-between px-5 pt-14 pb-4">
-                <button className="w-11 h-11 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white/70 text-xl">person</span>
-                </button>
+            <header className="flex items-center justify-between px-4 pt-safe pt-10 pb-2">
+                <Link href="/profile" className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white/60 text-xl">person</span>
+                </Link>
                 <div className="text-center">
-                    <h1 className="text-white font-bold text-lg">Discover</h1>
+                    <h1 className="text-white font-bold">Discover</h1>
                     <p className="text-white/40 text-xs">{location.city}</p>
                 </div>
-                <button className="w-11 h-11 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white/70 text-xl">tune</span>
+                <button className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white/60 text-xl">tune</span>
                 </button>
             </header>
 
-            {/* Card Area */}
-            <main className="relative z-10 flex-1 flex items-center justify-center px-5 pb-4">
-                {/* Background card */}
-                {nextRestaurant && (
-                    <div className="absolute inset-x-8 h-[60vh] max-h-[450px] rounded-[28px] overflow-hidden scale-[0.92] opacity-40">
-                        <img src={nextRestaurant.image} alt="" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/50" />
+            {/* Card area */}
+            <main className="flex-1 flex items-center justify-center px-4 py-2 relative overflow-hidden">
+                {/* Next card behind */}
+                {next && (
+                    <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 aspect-[3/4] max-h-[65vh] rounded-3xl overflow-hidden opacity-30 scale-95">
+                        <img src={next.image} alt="" className="h-full w-full object-cover" />
                     </div>
                 )}
 
                 {/* Current card */}
                 <div
-                    className="relative w-full max-w-[340px] h-[60vh] max-h-[450px] rounded-[28px] overflow-hidden shadow-2xl touch-pan-y select-none"
-                    style={cardStyle}
+                    className="relative w-full max-w-[320px] aspect-[3/4] max-h-[65vh] rounded-3xl overflow-hidden shadow-2xl border border-white/10 touch-pan-y select-none"
+                    style={{
+                        transform: cardTransform,
+                        opacity: swipeDirection ? 0 : 1,
+                        transition: isDragging ? "none" : "all 0.2s ease-out",
+                    }}
                     onTouchStart={onTouchStart}
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEnd}
                 >
-                    {/* Swipe indicators */}
+                    {/* Swipe labels */}
                     <div
-                        className="absolute top-6 left-6 z-30 px-4 py-2 border-[3px] border-green-400 rounded-xl -rotate-12 transition-opacity"
-                        style={{ opacity: Math.min(1, Math.max(0, dragOffset.x / 80)) }}
+                        className="absolute top-5 left-5 z-20 px-3 py-1.5 border-[3px] border-green-400 rounded-lg -rotate-12"
+                        style={{ opacity: Math.min(1, dragX / 60) }}
                     >
-                        <span className="text-green-400 font-black text-xl tracking-wide">YUM!</span>
+                        <span className="text-green-400 font-black text-lg">YUM!</span>
                     </div>
                     <div
-                        className="absolute top-6 right-6 z-30 px-4 py-2 border-[3px] border-red-400 rounded-xl rotate-12 transition-opacity"
-                        style={{ opacity: Math.min(1, Math.max(0, -dragOffset.x / 80)) }}
+                        className="absolute top-5 right-5 z-20 px-3 py-1.5 border-[3px] border-red-400 rounded-lg rotate-12"
+                        style={{ opacity: Math.min(1, -dragX / 60) }}
                     >
-                        <span className="text-red-400 font-black text-xl tracking-wide">NOPE</span>
+                        <span className="text-red-400 font-black text-lg">NOPE</span>
                     </div>
 
-                    {/* Image */}
-                    <img
-                        src={currentRestaurant.image}
-                        alt={currentRestaurant.name}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        draggable={false}
-                    />
+                    <img src={current.image} alt={current.name} className="absolute inset-0 h-full w-full object-cover" draggable={false} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
 
-                    {/* Gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-
-                    {/* Top info */}
-                    <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur-sm border border-white/10">
-                                <span className="material-symbols-outlined text-[#f46a25] text-sm">near_me</span>
-                                <span className="text-white text-xs font-medium">{currentRestaurant.distance}</span>
-                            </div>
+                    {/* Top badges */}
+                    <div className="absolute top-3 left-3 right-3 flex justify-between z-10">
+                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-sm">
+                            <span className="material-symbols-outlined text-[#f46a25] text-sm">near_me</span>
+                            <span className="text-white text-xs">{current.distance}</span>
                         </div>
-                        <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#f46a25] shadow-lg">
+                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#f46a25]">
                             <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                            <span className="text-white text-sm font-bold">{currentRestaurant.rating}</span>
+                            <span className="text-white text-xs font-bold">{current.rating}</span>
                         </div>
                     </div>
 
-                    {/* Bottom content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-5 z-20">
-                        <h2 className="text-white text-2xl font-bold mb-1">{currentRestaurant.name}</h2>
-                        <p className="text-white/60 text-sm mb-3">
-                            {currentRestaurant.cuisine} • {priceDisplay(currentRestaurant.priceLevel)} • {currentRestaurant.deliveryTime}
-                        </p>
-
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-2">
-                            {currentRestaurant.tags.slice(0, 2).map((tag, i) => (
-                                <span key={i} className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-white/80 text-xs font-medium">
-                                    {tag}
-                                </span>
+                    {/* Bottom info */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+                        <h2 className="text-white text-xl font-bold mb-0.5">{current.name}</h2>
+                        <p className="text-white/60 text-sm mb-2">{current.cuisine} • {priceDisplay(current.priceLevel)}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                            {current.tags.slice(0, 2).map((tag, i) => (
+                                <span key={i} className="px-2.5 py-1 rounded-full bg-white/10 text-white/70 text-xs">{tag}</span>
                             ))}
-                            {spice && (
-                                <span
-                                    className="px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm"
-                                    style={{ backgroundColor: `${spice.color}30`, color: spice.color }}
-                                >
-                                    🌶️ {spice.label}
-                                </span>
-                            )}
+                            <span className="px-2.5 py-1 rounded-full text-xs" style={{ backgroundColor: `${spice.color}25`, color: spice.color }}>
+                                🌶️ {spice.label}
+                            </span>
                         </div>
                     </div>
                 </div>
             </main>
 
-            {/* Action Buttons */}
-            <div className="relative z-20 flex items-center justify-center gap-6 py-6 pb-10">
-                <button
-                    onClick={handlePass}
-                    className="w-16 h-16 rounded-full bg-[#1a1210] border border-white/10 flex items-center justify-center shadow-xl active:scale-95 transition-transform"
-                >
-                    <span className="material-symbols-outlined text-red-400 text-3xl">close</span>
+            {/* Actions */}
+            <div className="flex items-center justify-center gap-5 py-4">
+                <button onClick={handlePass} className="h-14 w-14 rounded-full bg-[#171211] border border-white/10 flex items-center justify-center active:scale-95 transition-transform">
+                    <span className="material-symbols-outlined text-red-400 text-2xl">close</span>
                 </button>
-                <button
-                    onClick={handleLike}
-                    className="w-20 h-20 rounded-full bg-gradient-to-br from-[#f46a25] to-[#d4520f] flex items-center justify-center shadow-xl shadow-[#f46a25]/40 active:scale-95 transition-transform"
-                >
-                    <span className="material-symbols-outlined text-white text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                <button onClick={handleLike} className="h-16 w-16 rounded-full bg-gradient-to-br from-[#f46a25] to-[#d35a15] flex items-center justify-center shadow-lg shadow-[#f46a25]/30 active:scale-95 transition-transform">
+                    <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
                 </button>
-                <button
-                    className="w-16 h-16 rounded-full bg-[#1a1210] border border-white/10 flex items-center justify-center shadow-xl active:scale-95 transition-transform"
-                >
-                    <span className="material-symbols-outlined text-blue-400 text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                <button className="h-14 w-14 rounded-full bg-[#171211] border border-white/10 flex items-center justify-center active:scale-95 transition-transform">
+                    <span className="material-symbols-outlined text-blue-400 text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                 </button>
             </div>
 
-            {/* Bottom Nav */}
-            <nav className="relative z-20 bg-[#0f0a07]/90 backdrop-blur-xl border-t border-white/5 px-8 pt-3 pb-8">
-                <div className="flex justify-between items-center max-w-[300px] mx-auto">
-                    {[
-                        { icon: "home", href: "/discover", active: true },
-                        { icon: "search", href: "/search", active: false },
-                        { icon: "group", href: "/group", active: false },
-                        { icon: "person", href: "/profile", active: false },
-                    ].map((item) => (
-                        <a
-                            key={item.href}
-                            href={item.href}
-                            className={`p-2 ${item.active ? "text-[#f46a25]" : "text-white/30"}`}
-                        >
-                            <span
-                                className="material-symbols-outlined text-2xl"
-                                style={{ fontVariationSettings: item.active ? "'FILL' 1" : "'FILL' 0" }}
-                            >
-                                {item.icon}
-                            </span>
-                        </a>
-                    ))}
-                </div>
+            {/* Bottom nav */}
+            <nav className="flex justify-around items-center px-6 py-3 pb-safe pb-6 border-t border-white/5">
+                {[
+                    { icon: "home", href: "/discover", active: true },
+                    { icon: "search", href: "/search" },
+                    { icon: "group", href: "/group" },
+                    { icon: "person", href: "/profile" },
+                ].map((item) => (
+                    <Link key={item.href} href={item.href} className={item.active ? "text-[#f46a25]" : "text-white/30"}>
+                        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: item.active ? "'FILL' 1" : "'FILL' 0" }}>{item.icon}</span>
+                    </Link>
+                ))}
             </nav>
         </div>
     );
