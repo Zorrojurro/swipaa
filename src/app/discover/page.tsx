@@ -1,67 +1,36 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import RestaurantCard from "@/components/RestaurantCard";
-import ActionButtons from "@/components/ActionButtons";
 import BottomNav from "@/components/BottomNav";
-import FilterChips from "@/components/FilterChips";
 import { useRestaurants } from "@/context/RestaurantContext";
-import { Restaurant, spiceDisplay } from "@/data/restaurants";
+import { Restaurant, spiceDisplay, priceDisplay } from "@/data/restaurants";
 
 export default function DiscoverPage() {
     const router = useRouter();
-    const { restaurants, loading, location, useMockData, setUseMockData } = useRestaurants();
+    const { restaurants, location } = useRestaurants();
+
     const [currentIndex, setCurrentIndex] = useState(0);
     const [likedRestaurants, setLikedRestaurants] = useState<Restaurant[]>([]);
-    const [passedRestaurants, setPassedRestaurants] = useState<Restaurant[]>([]);
     const [swipeDirection, setSwipeDirection] = useState<"left" | "right" | null>(null);
-    const [showFilters, setShowFilters] = useState(false);
-    const [filters, setFilters] = useState({
-        cuisine: [] as string[],
-        priceLevel: [] as number[],
-        spiceLevel: null as string | null,
-        vegOnly: false,
-    });
-
-    // Swipe state
-    const cardRef = useRef<HTMLDivElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
     const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
-    // Filter restaurants
-    const filteredRestaurants = restaurants.filter((r) => {
-        if (filters.cuisine.length > 0 && !filters.cuisine.some(c => r.cuisine.includes(c))) {
-            return false;
-        }
-        if (filters.priceLevel.length > 0 && !filters.priceLevel.includes(r.priceLevel)) {
-            return false;
-        }
-        if (filters.spiceLevel) {
-            const spice = spiceDisplay(r.spiceLevel).label;
-            if (spice !== filters.spiceLevel) return false;
-        }
-        if (filters.vegOnly && !r.isVeg) return false;
-        return true;
-    });
+    const currentRestaurant = restaurants[currentIndex];
+    const nextRestaurant = restaurants[currentIndex + 1];
+    const spice = currentRestaurant ? spiceDisplay(currentRestaurant.spiceLevel) : null;
 
-    const currentRestaurant = filteredRestaurants[currentIndex];
-    const nextRestaurant = filteredRestaurants[currentIndex + 1];
-
-    // Handle swipe actions
     const handleLike = useCallback(() => {
         if (!currentRestaurant) return;
-
         setSwipeDirection("right");
-        setLikedRestaurants((prev) => [...prev, currentRestaurant]);
+        setLikedRestaurants(prev => [...prev, currentRestaurant]);
 
         setTimeout(() => {
-            setCurrentIndex((prev) => prev + 1);
+            setCurrentIndex(prev => prev + 1);
             setSwipeDirection(null);
             setDragOffset({ x: 0, y: 0 });
 
-            // Check for match after 3 likes
             if (likedRestaurants.length >= 2) {
                 router.push(`/match?id=${currentRestaurant.id}`);
             }
@@ -70,109 +39,82 @@ export default function DiscoverPage() {
 
     const handlePass = useCallback(() => {
         if (!currentRestaurant) return;
-
         setSwipeDirection("left");
-        setPassedRestaurants((prev) => [...prev, currentRestaurant]);
 
         setTimeout(() => {
-            setCurrentIndex((prev) => prev + 1);
+            setCurrentIndex(prev => prev + 1);
             setSwipeDirection(null);
             setDragOffset({ x: 0, y: 0 });
         }, 300);
     }, [currentRestaurant]);
 
-    const handleSuperLike = useCallback(() => {
-        handleLike();
-    }, [handleLike]);
+    const handleSuperLike = () => handleLike();
 
     const handleUndo = useCallback(() => {
         if (currentIndex === 0) return;
-
-        // Remove from appropriate list
-        if (likedRestaurants.length > 0 &&
-            likedRestaurants[likedRestaurants.length - 1].id === filteredRestaurants[currentIndex - 1]?.id) {
-            setLikedRestaurants((prev) => prev.slice(0, -1));
-        } else {
-            setPassedRestaurants((prev) => prev.slice(0, -1));
+        if (likedRestaurants.length > 0) {
+            setLikedRestaurants(prev => prev.slice(0, -1));
         }
+        setCurrentIndex(prev => prev - 1);
+    }, [currentIndex, likedRestaurants.length]);
 
-        setCurrentIndex((prev) => prev - 1);
-    }, [currentIndex, likedRestaurants, filteredRestaurants]);
-
-    // Touch/Mouse handlers for swipe
-    const handleStart = (clientX: number, clientY: number) => {
+    // Touch handlers
+    const onTouchStart = (e: React.TouchEvent) => {
         setIsDragging(true);
-        setStartPos({ x: clientX, y: clientY });
+        setStartPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
     };
 
-    const handleMove = (clientX: number, clientY: number) => {
+    const onTouchMove = (e: React.TouchEvent) => {
         if (!isDragging) return;
-
-        const deltaX = clientX - startPos.x;
-        const deltaY = clientY - startPos.y;
-        setDragOffset({ x: deltaX, y: deltaY * 0.3 });
+        const deltaX = e.touches[0].clientX - startPos.x;
+        const deltaY = e.touches[0].clientY - startPos.y;
+        setDragOffset({ x: deltaX, y: deltaY * 0.2 });
     };
 
-    const handleEnd = () => {
+    const onTouchEnd = () => {
         if (!isDragging) return;
         setIsDragging(false);
 
-        const threshold = 100;
-
-        if (dragOffset.x > threshold) {
-            handleLike();
-        } else if (dragOffset.x < -threshold) {
-            handlePass();
-        } else {
-            setDragOffset({ x: 0, y: 0 });
-        }
+        if (dragOffset.x > 80) handleLike();
+        else if (dragOffset.x < -80) handlePass();
+        else setDragOffset({ x: 0, y: 0 });
     };
 
     // Keyboard controls
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
+        const handleKey = (e: KeyboardEvent) => {
             if (e.key === "ArrowRight") handleLike();
             if (e.key === "ArrowLeft") handlePass();
-            if (e.key === "ArrowUp") handleSuperLike();
-            if (e.key === "z" && (e.ctrlKey || e.metaKey)) handleUndo();
         };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [handleLike, handlePass]);
 
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [handleLike, handlePass, handleSuperLike, handleUndo]);
+    // Card transform
+    const cardStyle = swipeDirection === "left"
+        ? { transform: "translateX(-120%) rotate(-15deg)", opacity: 0, transition: "all 0.3s ease-out" }
+        : swipeDirection === "right"
+            ? { transform: "translateX(120%) rotate(15deg)", opacity: 0, transition: "all 0.3s ease-out" }
+            : {
+                transform: `translateX(${dragOffset.x}px) translateY(${dragOffset.y}px) rotate(${dragOffset.x * 0.03}deg)`,
+                transition: isDragging ? "none" : "all 0.2s ease-out",
+            };
 
-    // Calculate card transform
-    const getCardStyle = () => {
-        if (swipeDirection === "left") {
-            return { transform: "translateX(-150%) rotate(-20deg)", opacity: 0, transition: "all 0.3s ease-out" };
-        }
-        if (swipeDirection === "right") {
-            return { transform: "translateX(150%) rotate(20deg)", opacity: 0, transition: "all 0.3s ease-out" };
-        }
-
-        const rotation = dragOffset.x * 0.05;
-        return {
-            transform: `translateX(${dragOffset.x}px) translateY(${dragOffset.y}px) rotate(${rotation}deg)`,
-            transition: isDragging ? "none" : "transform 0.3s ease-out",
-        };
-    };
-
-    // No more restaurants
+    // Empty state
     if (!currentRestaurant) {
         return (
-            <div className="flex flex-col h-dvh">
+            <div className="flex flex-col min-h-dvh bg-[#1a120d]">
                 <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-                    <span className="material-symbols-outlined text-[80px] text-white/20 mb-4">restaurant</span>
-                    <h2 className="text-2xl font-bold text-white mb-2">No more restaurants!</h2>
-                    <p className="text-white/60 mb-6">Adjust your filters or check back later for more options.</p>
+                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
+                        <span className="material-symbols-outlined text-4xl text-white/30">restaurant</span>
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-2">No more restaurants</h2>
+                    <p className="text-white/50 mb-6 max-w-[250px]">You&apos;ve seen all the options. Start over?</p>
                     <button
-                        onClick={() => {
-                            setCurrentIndex(0);
-                            setFilters({ cuisine: [], priceLevel: [], spiceLevel: null, vegOnly: false });
-                        }}
-                        className="px-6 py-3 bg-[#f46a25] text-white font-medium rounded-xl"
+                        onClick={() => setCurrentIndex(0)}
+                        className="px-6 py-3 bg-[#f46a25] text-white font-semibold rounded-xl"
                     >
-                        Reset & Start Over
+                        Start Over
                     </button>
                 </div>
                 <BottomNav />
@@ -181,111 +123,150 @@ export default function DiscoverPage() {
     }
 
     return (
-        <div className="flex flex-col h-dvh overflow-hidden">
-            {/* Status bar spacer */}
-            <div className="h-12 w-full shrink-0" />
-
+        <div className="flex flex-col min-h-dvh bg-[#1a120d]">
             {/* Header */}
-            <header className="flex items-center justify-between px-6 pb-4 shrink-0 z-20">
-                <button className="flex items-center justify-center h-10 w-10 rounded-full bg-white/5 text-white/80 hover:bg-white/10 hover:text-white transition-colors">
-                    <span className="material-symbols-outlined text-[28px]">account_circle</span>
+            <header className="flex items-center justify-between px-5 pt-12 pb-3 shrink-0">
+                <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white/70 text-xl">person</span>
                 </button>
-                <div className="flex flex-col items-center">
-                    <h1 className="text-white text-xl font-bold tracking-tight flex items-center gap-1">
-                        Discover
-                        <span
-                            className="material-symbols-outlined text-[#f46a25] text-[20px]"
-                            style={{ fontVariationSettings: "'FILL' 1" }}
-                        >
-                            expand_more
-                        </span>
-                    </h1>
-                    <p className="text-xs text-white/50 font-medium tracking-wide uppercase">
-                        {location.loading ? "Locating..." : location.city}
-                    </p>
+                <div className="text-center">
+                    <h1 className="text-white font-bold text-lg">Discover</h1>
+                    <p className="text-white/40 text-xs">{location.loading ? "Locating..." : location.city}</p>
                 </div>
-                <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center justify-center h-10 w-10 rounded-full transition-colors ${showFilters ? "bg-[#f46a25] text-white" : "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white"
-                        }`}
-                >
-                    <span className="material-symbols-outlined text-[24px]">tune</span>
+                <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white/70 text-xl">tune</span>
                 </button>
             </header>
 
-            {/* Filters */}
-            {showFilters && (
-                <div className="shrink-0 pb-4">
-                    <FilterChips filters={filters} onFilterChange={setFilters} />
-                </div>
-            )}
-
             {/* Card Stack */}
-            <main className="flex-1 relative w-full max-w-md mx-auto px-4 flex flex-col justify-center items-center z-10">
-                {/* Background Card (Next in stack) */}
+            <main className="flex-1 relative px-4 pb-4 flex items-center justify-center overflow-hidden">
+                {/* Next card (behind) */}
                 {nextRestaurant && (
-                    <div className="absolute w-[92%] h-[68vh] bg-[#3a2e28] rounded-3xl opacity-60 scale-95 origin-bottom shadow-lg transform translate-y-4 -z-10">
-                        <div
-                            className="w-full h-full rounded-3xl overflow-hidden bg-cover bg-center opacity-40"
-                            style={{ backgroundImage: `url('${nextRestaurant.image}')` }}
-                        />
+                    <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 h-[70vh] max-h-[500px] rounded-3xl overflow-hidden scale-95 opacity-50">
+                        <img src={nextRestaurant.image} alt="" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40" />
                     </div>
                 )}
 
-                {/* Active Card */}
+                {/* Current card */}
                 <div
-                    ref={cardRef}
-                    className="relative w-full h-[68vh] cursor-grab active:cursor-grabbing"
-                    style={getCardStyle()}
-                    onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
-                    onMouseMove={(e) => handleMove(e.clientX, e.clientY)}
-                    onMouseUp={handleEnd}
-                    onMouseLeave={handleEnd}
-                    onTouchStart={(e) => handleStart(e.touches[0].clientX, e.touches[0].clientY)}
-                    onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
-                    onTouchEnd={handleEnd}
+                    className="relative w-full max-w-[350px] h-[70vh] max-h-[500px] rounded-3xl overflow-hidden shadow-2xl touch-pan-y select-none"
+                    style={cardStyle}
+                    onTouchStart={onTouchStart}
+                    onTouchMove={onTouchMove}
+                    onTouchEnd={onTouchEnd}
                 >
-                    {/* Like/Pass indicators */}
+                    {/* Like/Nope indicators */}
                     <div
-                        className="absolute top-8 left-8 -rotate-12 border-4 border-green-500 rounded-lg px-4 py-1 z-20 transition-opacity pointer-events-none"
-                        style={{ opacity: Math.max(0, dragOffset.x / 100) }}
+                        className="absolute top-6 left-6 z-20 px-4 py-2 border-4 border-green-500 rounded-lg -rotate-12 opacity-0 transition-opacity"
+                        style={{ opacity: Math.min(1, Math.max(0, dragOffset.x / 60)) }}
                     >
-                        <span className="text-green-500 font-extrabold text-3xl tracking-widest uppercase">YUM</span>
+                        <span className="text-green-500 font-black text-2xl">YUM!</span>
                     </div>
                     <div
-                        className="absolute top-8 right-8 rotate-12 border-4 border-red-500 rounded-lg px-4 py-1 z-20 transition-opacity pointer-events-none"
-                        style={{ opacity: Math.max(0, -dragOffset.x / 100) }}
+                        className="absolute top-6 right-6 z-20 px-4 py-2 border-4 border-red-500 rounded-lg rotate-12 opacity-0 transition-opacity"
+                        style={{ opacity: Math.min(1, Math.max(0, -dragOffset.x / 60)) }}
                     >
-                        <span className="text-red-500 font-extrabold text-3xl tracking-widest uppercase">PASS</span>
+                        <span className="text-red-500 font-black text-2xl">NOPE</span>
                     </div>
 
-                    <RestaurantCard restaurant={currentRestaurant} />
+                    {/* Image */}
+                    <img
+                        src={currentRestaurant.image}
+                        alt={currentRestaurant.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        draggable={false}
+                    />
+
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent" />
+
+                    {/* Top badges */}
+                    <div className="absolute top-4 left-4 flex items-center gap-2">
+                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm">
+                            <span className="material-symbols-outlined text-[#f46a25] text-sm">near_me</span>
+                            <span className="text-white text-xs font-medium">{currentRestaurant.distance}</span>
+                        </div>
+                        {currentRestaurant.isOpen && (
+                            <div className="px-2.5 py-1 rounded-full bg-green-500/20 backdrop-blur-sm">
+                                <span className="text-green-400 text-xs font-medium">Open</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                        {/* Rating */}
+                        <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#f46a25] mb-3">
+                            <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                            <span className="text-white text-sm font-bold">{currentRestaurant.rating}</span>
+                            <span className="text-white/70 text-xs">({currentRestaurant.reviewCount.toLocaleString()})</span>
+                        </div>
+
+                        {/* Name & details */}
+                        <h2 className="text-white text-2xl font-bold mb-1">{currentRestaurant.name}</h2>
+                        <p className="text-white/60 text-sm mb-3">
+                            {currentRestaurant.cuisine} • {priceDisplay(currentRestaurant.priceLevel)}
+                        </p>
+
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-2">
+                            {currentRestaurant.tags.slice(0, 3).map((tag, i) => (
+                                <span key={i} className="px-3 py-1 rounded-full bg-white/10 text-white/80 text-xs font-medium">
+                                    {tag}
+                                </span>
+                            ))}
+                            {spice && (
+                                <span
+                                    className="px-3 py-1 rounded-full text-xs font-medium"
+                                    style={{ backgroundColor: `${spice.color}20`, color: spice.color }}
+                                >
+                                    🌶️ {spice.label}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Swipe hint */}
-                {currentIndex < 2 && (
-                    <p className="absolute bottom-4 text-white/30 text-sm animate-pulse">
-                        ← SWIPE LEFT or RIGHT →
-                    </p>
+                {currentIndex === 0 && (
+                    <div className="absolute bottom-4 left-0 right-0 text-center">
+                        <p className="text-white/30 text-sm animate-pulse">← Swipe to decide →</p>
+                    </div>
                 )}
             </main>
 
             {/* Action Buttons */}
-            <div className="py-6 shrink-0">
-                <ActionButtons
-                    onPass={handlePass}
-                    onLike={handleLike}
-                    onSuperLike={handleSuperLike}
-                    onUndo={handleUndo}
-                    canUndo={currentIndex > 0}
-                />
+            <div className="shrink-0 flex items-center justify-center gap-5 py-5 px-6">
+                <button
+                    onClick={handleUndo}
+                    disabled={currentIndex === 0}
+                    className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center disabled:opacity-30"
+                >
+                    <span className="material-symbols-outlined text-yellow-400 text-xl">replay</span>
+                </button>
+                <button
+                    onClick={handlePass}
+                    className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center active:scale-95 transition-transform"
+                >
+                    <span className="material-symbols-outlined text-red-400 text-3xl">close</span>
+                </button>
+                <button
+                    onClick={handleLike}
+                    className="w-16 h-16 rounded-full bg-[#f46a25] flex items-center justify-center shadow-lg shadow-[#f46a25]/30 active:scale-95 transition-transform"
+                >
+                    <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
+                </button>
+                <button
+                    onClick={handleSuperLike}
+                    className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center active:scale-95 transition-transform"
+                >
+                    <span className="material-symbols-outlined text-blue-400 text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
+                </button>
             </div>
 
-            {/* Bottom Navigation */}
+            {/* Bottom Nav */}
             <BottomNav />
-
-            {/* iOS Home Indicator Safe Area */}
-            <div className="h-2 w-full bg-[#1c1410] shrink-0" />
         </div>
     );
 }
