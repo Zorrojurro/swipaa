@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import BottomNav from "@/components/BottomNav";
 import { restaurants } from "@/data/restaurants";
 
 export default function SearchPage() {
@@ -58,19 +58,7 @@ export default function SearchPage() {
                 )}
             </main>
 
-            {/* Nav */}
-            <nav className="flex justify-around items-center px-6 py-3 pb-safe pb-6 border-t border-white/5">
-                {[
-                    { icon: "home", href: "/discover" },
-                    { icon: "search", href: "/search", active: true },
-                    { icon: "group", href: "/group" },
-                    { icon: "person", href: "/profile" },
-                ].map(item => (
-                    <Link key={item.href} href={item.href} className={item.active ? "text-[#f46a25]" : "text-white/30"}>
-                        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: item.active ? "'FILL' 1" : "'FILL' 0" }}>{item.icon}</span>
-                    </Link>
-                ))}
-            </nav>
+            <BottomNav />
         </div>
     );
 }

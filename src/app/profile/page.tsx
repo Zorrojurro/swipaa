@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import BottomNav from "@/components/BottomNav";
 
 export default function ProfilePage() {
     return (
@@ -45,19 +45,7 @@ export default function ProfilePage() {
                 </div>
             </main>
 
-            {/* Nav */}
-            <nav className="flex justify-around items-center px-6 py-3 pb-safe pb-6 border-t border-white/5">
-                {[
-                    { icon: "home", href: "/discover" },
-                    { icon: "search", href: "/search" },
-                    { icon: "group", href: "/group" },
-                    { icon: "person", href: "/profile", active: true },
-                ].map(item => (
-                    <Link key={item.href} href={item.href} className={item.active ? "text-[#f46a25]" : "text-white/30"}>
-                        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: item.active ? "'FILL' 1" : "'FILL' 0" }}>{item.icon}</span>
-                    </Link>
-                ))}
-            </nav>
+            <BottomNav />
         </div>
     );
 }

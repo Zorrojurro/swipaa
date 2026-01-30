@@ -3,8 +3,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import BottomNav from "@/components/BottomNav";
 import { useRestaurants } from "@/context/RestaurantContext";
-import { Restaurant, spiceDisplay, priceDisplay } from "@/data/restaurants";
+import { spiceDisplay, priceDisplay } from "@/data/restaurants";
 
 export default function DiscoverPage() {
     const router = useRouter();
@@ -188,18 +189,7 @@ export default function DiscoverPage() {
             </div>
 
             {/* Bottom nav */}
-            <nav className="flex justify-around items-center px-6 py-3 pb-safe pb-6 border-t border-white/5">
-                {[
-                    { icon: "home", href: "/discover", active: true },
-                    { icon: "search", href: "/search" },
-                    { icon: "group", href: "/group" },
-                    { icon: "person", href: "/profile" },
-                ].map((item) => (
-                    <Link key={item.href} href={item.href} className={item.active ? "text-[#f46a25]" : "text-white/30"}>
-                        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: item.active ? "'FILL' 1" : "'FILL' 0" }}>{item.icon}</span>
-                    </Link>
-                ))}
-            </nav>
+            <BottomNav />
         </div>
     );
 }
